@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text Index Finder for spaCy Training</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #09a3d5 0%, #1a6fb8 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            background: linear-gradient(45deg, #09a3d5, #1a6fb8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .input-section {
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1rem;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #09a3d5;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #09a3d5;
+        }
+
+        button {
+            background: linear-gradient(45deg, #09a3d5, #1a6fb8);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #09a3d5;
+        }
+
+        .entity-result {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #e1e5e9;
+        }
+
+        .highlighted-text {
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            white-space: pre-wrap;
+        }
+
+        .highlight {
+            background: linear-gradient(45deg, #09a3d5, #1a6fb8);
+            color: white;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .spacy-output {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+
+        .entity-list {
+            margin: 20px 0;
+        }
+
+        .entity-input {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        .entity-input input {
+            flex: 2;
+        }
+
+        .entity-input select {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        .remove-btn {
+            background: #e53e3e;
+            padding: 8px 15px;
+            font-size: 14px;
+        }
+
+        .add-entity {
+            background: #38a169;
+        }
+
+        .char-breakdown {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            margin: 15px 0;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 2px solid #e1e5e9;
+        }
+
+        .char-item {
+            display: block;
+            padding: 2px 5px;
+            margin: 1px 0;
+            border-radius: 3px;
+            transition: background-color 0.3s ease;
+        }
+
+        .char-item:hover {
+            background-color: #e2e8f0;
+        }
+
+        .start-char {
+            border-left: 3px solid #22c55e;
+            padding-left: 10px;
+        }
+
+        .end-char {
+            border-right: 3px solid #ef4444;
+            padding-right: 10px;
+        }
+
+        .entity-group {
+            margin: 20px 0;
+            padding: 15px;
+            border: 2px solid #09a3d5;
+            border-radius: 10px;
+            background: #e6f7ff;
+        }
+
+        .entity-group h5 {
+            margin: 0 0 15px 0;
+            color: #1a6fb8;
+            font-size: 1.1em;
+        }
+
+        .occurrence-0, .occurrence-1, .occurrence-2, .occurrence-3, .occurrence-4 { 
+            border-left: 4px solid #09a3d5; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Text Index Finder for spaCy</h1>
+        
+        <div class="input-section">
+            <label for="sourceText">Source Text:</label>
+            <textarea id="sourceText" rows="8" placeholder="Paste your email text here...">
+NokiaME DoNotReply|Your recent job application for Hardware Engineer - 19497|Dear Ricky, We received your job application for Hardware Engineer - 19497. We will review your application and get back to you soon. If you were requested to provide additional info about your job application, or if you want to manage your profile, go to your candidate self-service page . We also i</textarea>
+        </div>
+
+        <div class="input-section">
+            <label>Entities to Find:</label>
+            <div class="entity-list" id="entityList">
+                <div class="entity-input">
+                    <input type="text" placeholder="Entity text (e.g., Machine Learning Engineer)" value="Hardware Engineer - 19497">
+                    <select>
+                        <option value="ROLE">ROLE</option>
+                        <option value="ORG">ORG</option>
+                        <option value="PERSON">PERSON</option>
+                        <option value="LOCATION">LOCATION</option>
+                        <option value="SALARY">SALARY</option>
+                        <option value="DATE">DATE</option>
+                    </select>
+                    <button class="remove-btn" onclick="removeEntity(this)">Remove</button>
+                </div>
+            </div>
+            <button class="add-entity" onclick="addEntity()">Add Entity</button>
+        </div>
+
+        <button onclick="findIndices()">Find Indices</button>
+
+        <div id="results" class="results" style="display: none;">
+            <h3>Results:</h3>
+            <div id="resultContent"></div>
+            
+            <h4>spaCy Training Format:</h4>
+            <div id="spacyOutput" class="spacy-output"></div>
+        </div>
+    </div>
+
+    <script>
+        function addEntity() {
+            const entityList = document.getElementById('entityList');
+            const newEntity = document.createElement('div');
+            newEntity.className = 'entity-input';
+            newEntity.innerHTML = `
+                <input type="text" placeholder="Entity text">
+                <select>
+                    <option value="ROLE">ROLE</option>
+                    <option value="ORG">ORG</option>
+                    <option value="PERSON">PERSON</option>
+                    <option value="LOCATION">LOCATION</option>
+                    <option value="SALARY">SALARY</option>
+                    <option value="DATE">DATE</option>
+                </select>
+                <button class="remove-btn" onclick="removeEntity(this)">Remove</button>
+            `;
+            entityList.appendChild(newEntity);
+        }
+
+        function removeEntity(button) {
+            button.parentElement.remove();
+        }
+
+        function findAllOccurrences(text, searchString) {
+            const occurrences = [];
+            let startIndex = 0;
+            
+            while (startIndex < text.length) {
+                const index = text.indexOf(searchString, startIndex);
+                if (index === -1) break;
+                
+                occurrences.push({
+                    start: index,
+                    end: index + searchString.length
+                });
+                
+                startIndex = index + 1;
+            }
+            
+            return occurrences;
+        }
+
+        function findIndices() {
+            const sourceText = document.getElementById('sourceText').value;
+            const entityInputs = document.querySelectorAll('.entity-input');
+            
+            let allResults = [];
+            let trainingEntities = [];
+            let resultHTML = '';
+            
+            let charBreakdown = '<h4>Character-by-Character Breakdown:</h4><div class="char-breakdown">';
+            for (let i = 0; i < sourceText.length; i++) {
+                let char = sourceText[i];
+                let displayChar = char;
+                
+                if (char === '\n') {
+                    displayChar = '\\n';
+                } else if (char === '\r') {
+                    displayChar = '\\r';
+                } else if (char === '\t') {
+                    displayChar = '\\t';
+                } else if (char === ' ') {
+                    displayChar = '·';
+                } else if (char === '\\') {
+                    displayChar = '\\';
+                }
+                
+                charBreakdown += `<span class="char-item" data-index="${i}">${i.toString().padStart(3, '0')}: '${displayChar}'</span>`;
+            }
+            charBreakdown += '</div>';
+            
+            entityInputs.forEach((entityInput, index) => {
+                const entityText = entityInput.querySelector('input').value.trim();
+                const entityLabel = entityInput.querySelector('select').value;
+                
+                if (entityText) {
+                    const occurrences = findAllOccurrences(sourceText, entityText);
+                    
+                    if (occurrences.length > 0) {
+                        resultHTML += `<div class="entity-group"><h5>"${entityText}" (${entityLabel}) - Found ${occurrences.length} occurrence(s):</h5>`;
+                        
+                        occurrences.forEach((occurrence, occIndex) => {
+                            const extractedText = sourceText.slice(occurrence.start, occurrence.end);
+                            
+                            allResults.push({
+                                text: entityText,
+                                label: entityLabel,
+                                start: occurrence.start,
+                                end: occurrence.end,
+                                extracted: extractedText,
+                                occurrenceIndex: occIndex + 1
+                            });
+                            
+                            trainingEntities.push([occurrence.start, occurrence.end, entityLabel]);
+                            
+                            resultHTML += `
+                                <div class="entity-result occurrence-${occIndex}">
+                                    <strong>Occurrence #${occIndex + 1}:</strong><br>
+                                    <strong>Entity span:</strong> ${occurrence.start}:${occurrence.end}<br>
+                                    <strong>Extracted substring:</strong> "${extractedText}"<br>
+                                    <strong>Length:</strong> ${extractedText.length} characters<br>
+                                    <strong>Match:</strong> ${entityText === extractedText ? '✅ Perfect match' : '❌ Mismatch!'}
+                                </div>
+                            `;
+                        });
+                        
+                        resultHTML += '</div>';
+                    } else {
+                        resultHTML += `
+                            <div class="entity-result" style="background: #fed7d7;">
+                                <strong>"${entityText}"</strong> (${entityLabel})<br>
+                                Not found in text
+                            </div>
+                        `;
+                    }
+                }
+            });
+
+            let highlightedText = sourceText;
+            allResults.sort((a, b) => b.start - a.start);
+            
+            const entityColors = {
+                'ROLE': '#09a3d5',
+                'ORG': '#e53e3e', 
+                'PERSON': '#38a169',
+                'LOCATION': '#ed8936',
+                'SALARY': '#9f7aea',
+                'DATE': '#4299e1'
+            };
+            
+            allResults.forEach((result, index) => {
+                const baseColor = entityColors[result.label] || '#09a3d5';
+                const before = highlightedText.substring(0, result.start);
+                const highlighted = `<span class="highlight" style="background: ${baseColor};" title="[${result.start}:${result.end}] ${result.label} #${result.occurrenceIndex}">${result.extracted}</span>`;
+                const after = highlightedText.substring(result.end);
+                highlightedText = before + highlighted + after;
+            });
+
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('resultContent').innerHTML = 
+                resultHTML + 
+                charBreakdown +
+                `<h4>Highlighted Text:</h4><div class="highlighted-text">${highlightedText}</div>`;
+
+            allResults.forEach((result, index) => {
+                const baseColor = entityColors[result.label] || '#09a3d5';
+                for (let i = result.start; i < result.end; i++) {
+                    const charElement = document.querySelector(`[data-index="${i}"]`);
+                    if (charElement) {
+                        charElement.style.background = baseColor;
+                        charElement.style.color = 'white';
+                        charElement.style.fontWeight = 'bold';
+                        if (i === result.start) charElement.classList.add('start-char');
+                        if (i === result.end - 1) charElement.classList.add('end-char');
+                    }
+                }
+            });
+
+            const spacyFormat = {
+                "text": sourceText,
+                "entities": trainingEntities
+            };
+            
+            document.getElementById('spacyOutput').textContent = JSON.stringify([spacyFormat], null, 2);
+        }
+
+        window.onload = function() {
+            const textarea = document.getElementById('sourceText');
+            textarea.value = 'NokiaME DoNotReply|Your recent job application for Hardware Engineer - 19497|Dear Ricky, We received your job application for Hardware Engineer - 19497. We will review your application and get back to you soon. If you were requested to provide additional info about your job application, or if you want to manage your profile, go to your candidate self-service page . We also i';
+            findIndices();
+        };
+    </script>
+</body>
+</html>
