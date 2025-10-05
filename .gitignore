@@ -1,3 +1,4 @@
+# Credentials & sensitive data
 credentials.json
 token.pickle
 *.pkl
